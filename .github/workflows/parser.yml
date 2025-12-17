@@ -1,0 +1,41 @@
+name: Steam Skins Parser
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'  # Каждые 6 часов
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Python dependencies
+      run: pip install -r requirements.txt
+    
+    - name: Get data from Google Sheets
+      env:
+        GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+      run: python read_sheets.py
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install Node dependencies
+      run: npm install
+    
+    - name: Run parser
+      env:
+        API_TG: ${{ secrets.API_TG }}
+        ID: ${{ secrets.ID }}
+      run: node parser.js

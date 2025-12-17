@@ -2,7 +2,6 @@ name: Steam Skins Parser
 
 on:
   workflow_dispatch:
-  schedule:
     
 
 jobs:

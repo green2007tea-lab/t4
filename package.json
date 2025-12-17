@@ -1,0 +1,13 @@
+{
+  "name": "steam-skins-parser",
+  "version": "1.0.0",
+  "description": "CS2 skins parser with pattern detection",
+  "main": "parser.js",
+  "scripts": {
+    "start": "node parser.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0",
+    "axios": "^1.6.0"
+  }
+}

@@ -75,11 +75,22 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
   
   try {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-    await page.waitForSelector('.market_listing_row.market_recent_listing_row', { timeout: 10000 });
-    await new Promise(r => setTimeout(r, 1500));
+    await page.waitForSelector('.market_listing_row.market_recent_listing_row', { timeout: 15000 });
+    const delay = 15000 + Math.random() * 1000; // 15-16 секунд
+    await new Promise(r => setTimeout(r, delay));
   } catch (error) {
     console.log(`❌ Ошибка загрузки страницы: ${error.message}`);
-    return;
+    console.log(`⏳ Пауза 30 секунд перед повтором...`);
+    await new Promise(r => setTimeout(r, 30000));
+    
+    try {
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+      await page.waitForSelector('.market_listing_row.market_recent_listing_row', { timeout: 15000 });
+      await new Promise(r => setTimeout(r, 3000));
+    } catch (retryError) {
+      console.log(`❌ Повторная попытка не удалась, скип скина`);
+      return;
+    }
   }
   
   // Получаем количество страниц
@@ -227,7 +238,8 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
       const nextPageUrl = `${url}?start=${currentPage * 10}&count=10`;
       await page.goto(nextPageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
       await page.waitForSelector('.market_listing_row.market_recent_listing_row');
-      await new Promise(r => setTimeout(r, 1500));
+      const delay = 15000 + Math.random() * 1000; // 15-16 секунд
+      await new Promise(r => setTimeout(r, delay));
     }
   }
   
@@ -244,6 +256,9 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
   });
   
   const page = await browser.newPage();
+  
+  // Устанавливаем User-Agent как у обычного браузера
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
   await page.setViewport({ width: 1920, height: 1080 });
   
   let parsedCount = 0;
@@ -256,8 +271,10 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
     parsedCount++;
     await parseSkin(page, skin, parsedCount, totalSkins);
     
-    // Небольшая пауза между скинами
-    await new Promise(r => setTimeout(r, 2000));
+    // Пауза 15-16 секунд между скинами
+    const delay = 15000 + Math.random() * 1000;
+    console.log(`⏳ Пауза ${Math.round(delay/1000)}с перед следующим скином...`);
+    await new Promise(r => setTimeout(r, delay));
   }
   
   console.log(`\n✅ Парсинг завершен. Обработано скинов: ${parsedCount}`);

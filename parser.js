@@ -55,7 +55,7 @@ function parsePrice(priceText) {
 }
 
 // Парсим один скин
-async function parseSkin(page, skinName) {
+async function parseSkin(page, skinName, skinNumber, totalSkins) {
   const baseSkinName = getBaseSkinName(skinName);
   const hasPatterns = patternsData[baseSkinName];
   
@@ -67,7 +67,7 @@ async function parseSkin(page, skinName) {
   const tier1 = hasPatterns.tier1 || [];
   const tier2 = hasPatterns.tier2 || [];
   
-  console.log(`\n🔍 Парсинг: ${skinName}`);
+  console.log(`\n🔍 Парсинг скина ${skinNumber}/${totalSkins}: ${skinName}`);
   console.log(`   Tier 1 паттерны: ${tier1.length}, Tier 2: ${tier2.length}`);
   
   const encodedName = encodeURIComponent(skinName);
@@ -174,8 +174,10 @@ async function parseSkin(page, skinName) {
     });
     
     // Проверяем результаты
-    for (const item of results) {
+    for (let i = 0; i < results.length; i++) {
+      const item = results[i];
       const price = parsePrice(item.price);
+      const itemNumber = currentPage * 10 + i + 1;  // Номер предмета на странице
       
       // Если цена превышает максимум - останавливаем парсинг этого скина
       if (price && price > maxPrice) {
@@ -204,7 +206,8 @@ async function parseSkin(page, skinName) {
           console.log(`   🔗 ${listingUrl}`);
           
           const message = `🎯 <b>Найден скин с редким паттерном!</b>\n\n` +
-            `<b>Скин:</b> ${skinName}\n` +
+            `<b>Скин ${skinNumber}/${totalSkins}:</b> ${skinName}\n` +
+            `<b>Позиция:</b> #${itemNumber} на странице ${currentPage + 1}\n` +
             `<b>Паттерн:</b> ${item.pattern}\n` +
             `<b>Тир:</b> ${tier}\n` +
             `<b>Цена:</b> ${item.price}\n` +
@@ -244,12 +247,14 @@ async function parseSkin(page, skinName) {
   await page.setViewport({ width: 1920, height: 1080 });
   
   let parsedCount = 0;
+  const totalSkins = skinsList.filter(s => s).length;
   
-  for (const skin of skinsList) {
+  for (let i = 0; i < skinsList.length; i++) {
+    const skin = skinsList[i];
     if (!skin) continue;
     
-    await parseSkin(page, skin);
     parsedCount++;
+    await parseSkin(page, skin, parsedCount, totalSkins);
     
     // Небольшая пауза между скинами
     await new Promise(r => setTimeout(r, 2000));

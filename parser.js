@@ -235,11 +235,17 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
     // Переходим на следующую страницу
     currentPage++;
     if (currentPage < totalPages) {
-      const nextPageUrl = `${url}?start=${currentPage * 10}&count=10`;
-      await page.goto(nextPageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
-      await page.waitForSelector('.market_listing_row.market_recent_listing_row');
-      const delay = 15000 + Math.random() * 1000; // 15-16 секунд
-      await new Promise(r => setTimeout(r, delay));
+      try {
+        const nextPageUrl = `${url}?start=${currentPage * 10}&count=10`;
+        await page.goto(nextPageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+        await page.waitForSelector('.market_listing_row.market_recent_listing_row', { timeout: 15000 });
+        const delay = 15000 + Math.random() * 1000; // 15-16 секунд
+        await new Promise(r => setTimeout(r, delay));
+      } catch (error) {
+        console.log(`   ❌ Ошибка загрузки страницы ${currentPage + 1}: ${error.message}`);
+        console.log(`   ⏭️ Пропускаем остальные страницы этого скина`);
+        break; // Выходим из цикла страниц, переходим к следующему скину
+      }
     }
   }
   

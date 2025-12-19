@@ -29,7 +29,6 @@ async function sendToTelegram(message) {
       text: message,
       parse_mode: 'HTML'
     });
-    console.log('✅ Отправлено в Telegram');
   } catch (error) {
     console.error('❌ Ошибка отправки в Telegram:', error.message);
   }
@@ -68,7 +67,12 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
   const tier2 = hasPatterns.tier2 || [];
   
   console.log(`\n🔍 Парсинг скина ${skinNumber}/${totalSkins}: ${skinName}`);
-  console.log(`   Tier 1 паттерны: ${tier1.length}, Tier 2: ${tier2.length}`);
+  if (tier1.length > 0) {
+    console.log(`   🥇 Tier 1 паттерны (${tier1.length}): ${tier1.join(', ')}`);
+  }
+  if (tier2.length > 0) {
+    console.log(`   🥈 Tier 2 паттерны (${tier2.length}): ${tier2.join(', ')}`);
+  }
   
   const encodedName = encodeURIComponent(skinName);
   const url = `https://steamcommunity.com/market/listings/730/${encodedName}`;
@@ -103,12 +107,20 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
   
   console.log(`   📄 Страниц: ${totalPages}`);
   
+  const MAX_PAGES = 20; // Максимум 20 страниц на скин
+  const pagesToParse = Math.min(totalPages, MAX_PAGES);
+  
+  if (totalPages > MAX_PAGES) {
+    console.log(`   ⚠️ Ограничение: парсим только первые ${MAX_PAGES} страниц из ${totalPages}`);
+  }
+  
   let currentPage = 0;
   let shouldStop = false;
   let foundCount = 0;
+  let firstPrice = null; // Цена первого скина для расчета лимита
   
-  while (currentPage < totalPages && !shouldStop) {
-    console.log(`   📄 Парсинг страницы ${currentPage + 1}/${totalPages}...`);
+  while (currentPage < pagesToParse && !shouldStop) {
+    console.log(`   📄 Парсинг страницы ${currentPage + 1}/${pagesToParse}...`);
     
     const results = await page.evaluate(async () => {
       const listings = document.querySelectorAll('.market_listing_row.market_recent_listing_row');
@@ -188,11 +200,24 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
     for (let i = 0; i < results.length; i++) {
       const item = results[i];
       const price = parsePrice(item.price);
-      const itemNumber = currentPage * 10 + i + 1;  // Номер предмета на странице
+      const itemNumber = currentPage * 10 + i + 1;
       
-      // Если цена превышает максимум - останавливаем парсинг этого скина
+      // Запоминаем цену первого скина (только один раз)
+      if (firstPrice === null && price) {
+        firstPrice = price;
+        console.log(`   💵 ПЕРВЫЙ СКИН: $${firstPrice} → останов на $${(firstPrice * 2).toFixed(2)}`);
+      }
+      
+      // Проверяем максимальную цену из таблицы
       if (price && price > maxPrice) {
-        console.log(`   💰 Цена ${price}$ > ${maxPrice}$ - останавливаем`);
+        console.log(`   💰 Цена $${price} > $${maxPrice} (лимит таблицы) - останавливаем`);
+        shouldStop = true;
+        break;
+      }
+      
+      // Проверяем превышение в 2 раза от первого скина
+      if (firstPrice && price && price > firstPrice * 2) {
+        console.log(`   💰 Цена $${price} > $${(firstPrice * 2).toFixed(2)} (x2 от первого $${firstPrice}) - останавливаем`);
         shouldStop = true;
         break;
       }
@@ -212,9 +237,7 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
           foundCount++;
           const listingUrl = `https://steamcommunity.com/market/listings/730/${encodedName}`;
           
-          console.log(`   ✨ НАЙДЕН! Паттерн ${item.pattern} - Tier ${tier}`);
-          console.log(`   💰 Цена: ${item.price}`);
-          console.log(`   🔗 ${listingUrl}`);
+          console.log(`   ✨ НАЙДЕН! Tier ${tier} паттерн ${item.pattern} - ${item.price} на позиции #${itemNumber}`);
           
           const message = `🎯 <b>Найден скин с редким паттерном!</b>\n\n` +
             `<b>Скин ${skinNumber}/${totalSkins}:</b> ${skinName}\n` +
@@ -234,7 +257,7 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
     
     // Переходим на следующую страницу
     currentPage++;
-    if (currentPage < totalPages) {
+    if (currentPage < pagesToParse) {
       try {
         const nextPageUrl = `${url}?start=${currentPage * 10}&count=10`;
         await page.goto(nextPageUrl, { waitUntil: 'networkidle2', timeout: 60000 });

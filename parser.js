@@ -80,7 +80,7 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
   try {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
     await page.waitForSelector('.market_listing_row.market_recent_listing_row', { timeout: 15000 });
-    const delay = 15000 + Math.random() * 1000; // 15-16 секунд
+    const delay = 20000 + Math.random() * 2000; // 20-22 секунды
     await new Promise(r => setTimeout(r, delay));
   } catch (error) {
     console.log(`❌ Ошибка загрузки страницы: ${error.message}`);
@@ -262,7 +262,7 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
         const nextPageUrl = `${url}?start=${currentPage * 10}&count=10`;
         await page.goto(nextPageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
         await page.waitForSelector('.market_listing_row.market_recent_listing_row', { timeout: 15000 });
-        const delay = 15000 + Math.random() * 1000; // 15-16 секунд
+        const delay = 20000 + Math.random() * 2000; // 20-22 секунды
         await new Promise(r => setTimeout(r, delay));
       } catch (error) {
         console.log(`   ❌ Ошибка загрузки страницы ${currentPage + 1}: ${error.message}`);
@@ -300,8 +300,8 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
     parsedCount++;
     await parseSkin(page, skin, parsedCount, totalSkins);
     
-    // Пауза 15-16 секунд между скинами
-    const delay = 15000 + Math.random() * 1000;
+    // Пауза 20-22 секунды между скинами
+    const delay = 20000 + Math.random() * 2000;
     console.log(`⏳ Пауза ${Math.round(delay/1000)}с перед следующим скином...`);
     await new Promise(r => setTimeout(r, delay));
   }

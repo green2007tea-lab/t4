@@ -37,12 +37,16 @@ def get_sheets_data():
     for row in patterns_data[1:]:  # Пропускаем заголовок
         if len(row) >= 4 and row[0]:
             skin_name = row[0].strip()
-            tier1 = row[2].strip() if len(row) > 2 else ""
-            tier2 = row[3].strip() if len(row) > 3 else ""
+            tier1_raw = row[2].strip() if len(row) > 2 else ""
+            tier2_raw = row[3].strip() if len(row) > 3 else ""
+            
+            # Парсим паттерны и конвертируем в строки
+            tier1_list = [p.strip() for p in tier1_raw.split(',') if p.strip()]
+            tier2_list = [p.strip() for p in tier2_raw.split(',') if p.strip()]
             
             patterns_dict[skin_name] = {
-                'tier1': [p.strip() for p in tier1.split(',') if p.strip()],
-                'tier2': [p.strip() for p in tier2.split(',') if p.strip()]
+                'tier1': tier1_list,
+                'tier2': tier2_list
             }
     
     result = {

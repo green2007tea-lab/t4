@@ -1,6 +1,8 @@
 import gspread
 import json
 import os
+import time
+import random
 from oauth2client.service_account import ServiceAccountCredentials
 
 SPREADSHEET_ID = '1lUVs-5pmYWG-Cp-S3bYoIwmmnjvhF047vM_fDpVEjic'
@@ -20,8 +22,19 @@ def get_sheets_data():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPES)
     client = gspread.authorize(creds)
     
-    # Открываем таблицу
-    sheet = client.open_by_key(SPREADSHEET_ID)
+    # Открываем таблицу с retry логикой
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            sheet = client.open_by_key(SPREADSHEET_ID)
+            break
+        except gspread.exceptions.APIError as e:
+            if '429' in str(e) and attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 10 + random.randint(0, 10)
+                print(f"⚠️ API rate limit, ожидание {wait_time} секунд...")
+                time.sleep(wait_time)
+            else:
+                raise
     
     # Читаем лист "скины"
     skins_sheet = sheet.worksheet('скины')

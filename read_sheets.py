@@ -48,10 +48,10 @@ def get_sheets_data():
     # Формируем словарь паттернов
     patterns_dict = {}
     for row in patterns_data[1:]:  # Пропускаем заголовок
-        if len(row) >= 4 and row[0]:
+        if len(row) >= 5 and row[0]:  # Должно быть минимум 5 столбцов (A, B, C, D, E)
             skin_name = row[0].strip()
-            tier1_raw = row[2].strip() if len(row) > 2 else ""
-            tier2_raw = row[3].strip() if len(row) > 3 else ""
+            tier1_raw = row[3].strip() if len(row) > 3 else ""  # Столбец D
+            tier2_raw = row[4].strip() if len(row) > 4 else ""  # Столбец E
             
             # Парсим паттерны и конвертируем в строки
             tier1_list = [p.strip() for p in tier1_raw.split(',') if p.strip()]

@@ -6,13 +6,25 @@ const axios = require('axios');
 const TG_BOT_TOKEN = process.env.API_TG;
 const TG_CHAT_ID = process.env.ID;
 
+// Параметры воркера из переменных окружения
+const WORKER_ID = parseInt(process.env.WORKER_ID || '1');
+const TOTAL_WORKERS = parseInt(process.env.TOTAL_WORKERS || '1');
+
 // Загружаем данные из Google Sheets
 const skinsData = JSON.parse(fs.readFileSync('skins_data.json', 'utf-8'));
 const maxPrice = parseFloat(skinsData.max_price.replace('$', ''));
-const skinsList = skinsData.skins;
+const allSkins = skinsData.skins;
 const patternsData = skinsData.patterns;
 
-console.log(`📊 Загружено скинов: ${skinsList.length}`);
+// Разделяем скины между воркерами
+const skinsPerWorker = Math.ceil(allSkins.length / TOTAL_WORKERS);
+const startIndex = (WORKER_ID - 1) * skinsPerWorker;
+const endIndex = Math.min(startIndex + skinsPerWorker, allSkins.length);
+const skinsList = allSkins.slice(startIndex, endIndex);
+
+console.log(`🤖 Воркер ${WORKER_ID}/${TOTAL_WORKERS}`);
+console.log(`📊 Всего скинов: ${allSkins.length}, мой диапазон: ${startIndex + 1}-${endIndex}`);
+console.log(`📊 Загружено скинов для парсинга: ${skinsList.length}`);
 console.log(`💰 Максимальная цена: ${maxPrice}$`);
 console.log(`🎯 Скинов с паттернами: ${Object.keys(patternsData).length}\n`);
 
@@ -107,20 +119,13 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
   
   console.log(`   📄 Страниц: ${totalPages}`);
   
-  const MAX_PAGES = 20; // Максимум 20 страниц на скин
-  const pagesToParse = Math.min(totalPages, MAX_PAGES);
-  
-  if (totalPages > MAX_PAGES) {
-    console.log(`   ⚠️ Ограничение: парсим только первые ${MAX_PAGES} страниц из ${totalPages}`);
-  }
-  
   let currentPage = 0;
   let shouldStop = false;
   let foundCount = 0;
   let firstPrice = null; // Цена первого скина для расчета лимита
   
-  while (currentPage < pagesToParse && !shouldStop) {
-    console.log(`   📄 Парсинг страницы ${currentPage + 1}/${pagesToParse}...`);
+  while (currentPage < totalPages && !shouldStop) {
+    console.log(`   📄 Парсинг страницы ${currentPage + 1}/${totalPages}...`);
     
     const results = await page.evaluate(async () => {
       const listings = document.querySelectorAll('.market_listing_row.market_recent_listing_row');
@@ -257,7 +262,7 @@ async function parseSkin(page, skinName, skinNumber, totalSkins) {
     
     // Переходим на следующую страницу
     currentPage++;
-    if (currentPage < pagesToParse) {
+    if (currentPage < totalPages) {
       try {
         const nextPageUrl = `${url}?start=${currentPage * 10}&count=10`;
         await page.goto(nextPageUrl, { waitUntil: 'networkidle2', timeout: 60000 });

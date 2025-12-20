@@ -8,7 +8,7 @@ on:
 jobs:
   parse:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Максимум 30 минут на воркер
+    timeout-minutes: 45  # Максимум 45 минут (с учетом задержки до 3 минут)
     continue-on-error: true  # Не останавливать другие воркеры при ошибке
     strategy:
       matrix:
@@ -30,7 +30,7 @@ jobs:
     
     - name: Random delay to avoid API rate limit
       run: |
-        DELAY=$((RANDOM % 60))
+        DELAY=$((RANDOM % 180))
         echo "⏳ Задержка $DELAY секунд для воркера ${{ matrix.worker_id }}"
         sleep $DELAY
     

@@ -2,8 +2,8 @@ name: Steam Parser - 20 Workers
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 */5 * * *'  # Каждые 2 часа
+  # schedule:
+  #   - cron: '0 */5 * * *'  # Каждые 2 часа
 
 jobs:
   parse:

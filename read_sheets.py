@@ -23,15 +23,15 @@ def get_sheets_data():
     client = gspread.authorize(creds)
     
     # Открываем таблицу с retry логикой
-    max_retries = 3
+    max_retries = 5
     for attempt in range(max_retries):
         try:
             sheet = client.open_by_key(SPREADSHEET_ID)
             break
         except gspread.exceptions.APIError as e:
             if '429' in str(e) and attempt < max_retries - 1:
-                wait_time = (attempt + 1) * 10 + random.randint(0, 10)
-                print(f"⚠️ API rate limit, ожидание {wait_time} секунд...")
+                wait_time = 30 + (attempt * 15) + random.randint(0, 30)
+                print(f"⚠️ API rate limit (попытка {attempt + 1}/{max_retries}), ожидание {wait_time} секунд...")
                 time.sleep(wait_time)
             else:
                 raise

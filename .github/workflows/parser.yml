@@ -3,12 +3,12 @@ name: Steam Parser - 20 Workers
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */2 * * *'  # Каждые 2 часа
+    - cron: '0 */5 * * *'  # Каждые 2 часа
 
 jobs:
   parse:
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # Максимум 45 минут (с учетом задержки до 3 минут)
+    timeout-minutes: 120  # Максимум 45 минут (с учетом задержки до 3 минут)
     continue-on-error: true  # Не останавливать другие воркеры при ошибке
     strategy:
       matrix:

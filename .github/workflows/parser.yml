@@ -8,10 +8,13 @@ on:
 jobs:
   parse:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # Максимум 30 минут на воркер
+    continue-on-error: true  # Не останавливать другие воркеры при ошибке
     strategy:
       matrix:
         worker_id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
       max-parallel: 20  # Все воркеры одновременно
+      fail-fast: false  # Не останавливать при ошибке
     
     steps:
     - name: Checkout code
@@ -24,6 +27,12 @@ jobs:
     
     - name: Install Python dependencies
       run: pip install -r requirements.txt
+    
+    - name: Random delay to avoid API rate limit
+      run: |
+        DELAY=$((RANDOM % 60))
+        echo "⏳ Задержка $DELAY секунд для воркера ${{ matrix.worker_id }}"
+        sleep $DELAY
     
     - name: Get data from Google Sheets
       env:

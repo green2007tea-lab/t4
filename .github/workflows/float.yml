@@ -1,1 +1,139 @@
+# .github/workflows/steam-float-scanner.yml
+name: Steam Float Scanner
+
+on:
+  # schedule:
+  #   # каждые 2 часа (поменяй как нужно)
+  #   - cron: "0 */2 * * *"
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: "Сколько воркеров (параллельных джобов)"
+        required: false
+        default: "3"
+      headless:
+        description: "Headless true/false"
+        required: false
+        default: "true"
+
+concurrency:
+  group: steam-float-scanner
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      worker_ids: ${{ steps.set.outputs.worker_ids }}
+      total_workers: ${{ steps.set.outputs.total_workers }}
+      headless: ${{ steps.set.outputs.headless }}
+    steps:
+      - id: set
+        shell: bash
+        run: |
+          WORKERS="${{ github.event.inputs.workers }}"
+          if [ -z "$WORKERS" ]; then WORKERS="3"; fi
+
+          HEADLESS="${{ github.event.inputs.headless }}"
+          if [ -z "$HEADLESS" ]; then HEADLESS="true"; fi
+
+          echo "total_workers=$WORKERS" >> "$GITHUB_OUTPUT"
+          echo "headless=$HEADLESS" >> "$GITHUB_OUTPUT"
+
+          IDS=$(python - <<'PY'
+          import os, json
+          n = int(os.environ["WORKERS"])
+          print(json.dumps(list(range(1, n+1))))
+          PY
+          )
+          echo "worker_ids=$IDS" >> "$GITHUB_OUTPUT"
+        env:
+          WORKERS: ${{ github.event.inputs.workers }}
+
+  prepare:
+    runs-on: ubuntu-latest
+    needs: matrix
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install gspread oauth2client
+
+      - name: Build skins_data.json from Google Sheets
+        env:
+          GOOGLE_SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SHEETS_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }} # опционально, если хочешь вынести в secret
+          FLOAT_SHEET_NAME: флоат
+          MAX_PRICE_CELL: H1
+          OUT_JSON: skins_data.json
+        run: |
+          python read_sheets-float.py
+          ls -la skins_data.json
+
+      - name: Upload skins_data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: skins_data
+          path: skins_data.json
+          retention-days: 1
+
+  scan:
+    runs-on: ubuntu-latest
+    needs: [matrix, prepare]
+    strategy:
+      fail-fast: false
+      matrix:
+        worker_id: ${{ fromJSON(needs.matrix.outputs.worker_ids) }}
+
+    env:
+      # Telegram
+      API_TG: ${{ secrets.API_TG }}
+      ID: ${{ secrets.ID }}
+
+      # Workers
+      WORKER_ID: ${{ matrix.worker_id }}
+      TOTAL_WORKERS: ${{ needs.matrix.outputs.total_workers }}
+
+      # Parser
+      DATA_FILE: skins_data.json
+      HEADLESS: ${{ needs.matrix.outputs.headless }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download skins_data.json
+        uses: actions/download-artifact@v4
+        with:
+          name: skins_data
+          path: .
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Node deps
+        shell: bash
+        run: |
+          # если у тебя есть package-lock.json — будет npm ci
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm init -y
+            npm install puppeteer axios
+          fi
+
+      - name: Run parser
+        run: node parser-float.js
 

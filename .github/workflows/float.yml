@@ -51,14 +51,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        worker_id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]   # количество воркеров (можешь поменять)
+        worker_id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]   # количество воркеров (можешь поменять)
 
     env:
       API_TG: ${{ secrets.API_TG }}
       ID: ${{ secrets.ID }}
 
       WORKER_ID: ${{ matrix.worker_id }}
-      TOTAL_WORKERS: 15
+      TOTAL_WORKERS: 20
 
       DATA_FILE: skins_data.json
       HEADLESS: true

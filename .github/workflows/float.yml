@@ -2,8 +2,8 @@
 name: Steam Float Scanner
 
 on:
-  schedule:
-    - cron: "0 */2 * * *"   # каждые 2 часа
+  # schedule:
+  #   - cron: "0 */2 * * *"   # каждые 2 часа
   workflow_dispatch:
 
 concurrency:
